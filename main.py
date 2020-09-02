@@ -1,10 +1,12 @@
 from PyPDF2 import PdfFileWriter, PdfFileReader
-from os import listdir
+from os import listdir, system, remove, path, mkdir
 from decimal import Decimal
 
+scaleX=True
+factor=0.8
+compress=False
+
 def create_watermark(input_pdf):
-    scaleX=True
-    factor=0.8
     
     watermark_obj = PdfFileReader('watermark.pdf')
     watermark_page = watermark_obj.getPage(0)
@@ -28,12 +30,30 @@ def create_watermark(input_pdf):
         page.mergeScaledTranslatedPage(watermark_page,scale,tx,ty,False)
         pdf_writer.addPage(page)
 
-    with open('dest/'+input_pdf, 'wb') as out:
-        pdf_writer.write(out)
+    if(compress==False):
+        with open('dest/'+input_pdf, 'wb') as out:
+            pdf_writer.write(out)
+            
+    else:
+        if path.exists('dest_tmp')==False:
+            mkdir('dest_tmp')
+        input_pdf=input_pdf.replace(" ", "_")
+        with open('dest_tmp/'+input_pdf, 'wb') as out:
+            pdf_writer.write(out)
+            
+        output='dest/'+input_pdf
+        system('gswin64c -q -dNOPAUSE -dBATCH -dSAFER -dSimulateOverprint=true -sDEVICE=pdfwrite -dPDFSETTINGS=/ebook -dEmbedAllFonts=true -dSubsetFonts=true -dAutoRotatePages=/None -dColorImageDownsampleType=/Bicubic -dColorImageResolution=150 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=150 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=150 -sOutputFile='+output+' dest_tmp/'+input_pdf)
+        remove('dest_tmp/'+input_pdf)
 
-
+######################################################## Main
+if path.exists('dest')==False:
+    mkdir('dest')
+       
 for elm in listdir('src'):
     create_watermark(elm)
+
+if(path.exists('dest_tmp')==True):
+    system('rmdir dest_tmp')
 
 
 
